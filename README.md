@@ -1,0 +1,77 @@
+# 🌸 My Routine — CRYSTAL BLOOM
+
+JILL STUART 2024 spring "Crystal Bloom Sakura Bouquet" インスパイアの  
+**ADHDの女の子のための実行機能サポートアプリ**です。
+
+---
+
+## ✦ 機能
+
+| タブ | 内容 |
+|------|------|
+| 🌸 ホーム | 今日の習慣クイックチェック・XP・ストリーク |
+| 🎀 習慣 | 6つの習慣をタップ達成・ポイント獲得・レベルアップ |
+| 💋 朝の準備 | 出発時刻を設定→残り時間をリアルタイム計算・時間切れ時はヘアセット省略アドバイス |
+| ⏱ タイマー | 各タスクの所要時間を見える化・時間感覚を育てる |
+
+---
+
+## 🚀 GitHub Pages で公開する手順
+
+### 1. リポジトリを作成
+```
+GitHubで新しいリポジトリを作成（名前は何でもOK）
+```
+
+### 2. ファイルをアップロード
+```
+index.html  ← このファイルだけあればOK
+README.md   ← あると見栄えが良い
+```
+
+### 3. GitHub Pages を有効化
+```
+Settings → Pages → Source: Deploy from a branch
+Branch: main  /  Folder: / (root)
+→ Save
+```
+
+### 4. 数分後にURLが発行される
+```
+https://<あなたのユーザー名>.github.io/<リポジトリ名>/
+```
+
+スマホでそのURLを開いて、**ホーム画面に追加**するとアプリっぽく使えます 📱
+
+---
+
+## 📱 ホーム画面への追加方法
+
+**iPhone (Safari)**
+1. Safariでページを開く
+2. 下部の共有ボタン（□↑）をタップ
+3.「ホーム画面に追加」→「追加」
+
+**Android (Chrome)**
+1. Chromeでページを開く
+2. 右上のメニュー（⋮）をタップ
+3.「ホーム画面に追加」
+
+---
+
+## 🎨 デザイン
+
+- カラー：JILL STUART 2024 spring "Crystal Bloom Sakura Bouquet" よりサンプリング
+- 桜ピンク `#EDACC8` × ラベンダー `#B07AAE` × クリスタルシルバー `#C0BAD0`
+- フォント：Noto Sans JP
+- 外部ライブラリ不使用（Google Fonts のみ）
+
+---
+
+## 📁 ファイル構成
+
+```
+/
+└── index.html   # アプリ本体（これ1ファイルで完結）
+└── README.md    # このファイル
+```

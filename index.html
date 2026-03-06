@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Bloom Routine</title>
+
+<!-- PWA / ホーム画面追加 -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Bloom Routine">
+<meta name="theme-color" content="#FDF0F5">
+
+<!-- SVG favicon（インライン data URI） -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3CradialGradient id='bg' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='0%25' stop-color='%23FDF0F5'/%3E%3Cstop offset='100%25' stop-color='%23F2DCF0'/%3E%3C/radialGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='22' fill='url(%23bg)'/%3E%3C!-- octagon compact --%3E%3Cpath d='M50 14 L68 21 L75 38 L75 62 L68 79 L50 86 L32 79 L25 62 L25 38 L32 21 Z' fill='%23D4A0CC' fill-opacity='.18' stroke='%23D4A0CC' stroke-width='2'/%3E%3C!-- palette dots --%3E%3Ccircle cx='42' cy='46' r='8' fill='%23D4A0CC' opacity='.6'/%3E%3Ccircle cx='58' cy='46' r='8' fill='%23C99AC8' opacity='.45'/%3E%3Ccircle cx='50' cy='60' r='8' fill='%23EDACC8' opacity='.75'/%3E%3C!-- sparkle top --%3E%3Cpath d='M50 8 L51.5 13 L57 13 L52.5 16.5 L54 22 L50 18.5 L46 22 L47.5 16.5 L43 13 L48.5 13 Z' fill='%23DDB8DC' opacity='.7'/%3E%3C/svg%3E">
+
+<!-- Apple touch icon (同じSVGをPNG代わりに) -->
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3CradialGradient id='bg' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='0%25' stop-color='%23FDF0F5'/%3E%3Cstop offset='100%25' stop-color='%23F2DCF0'/%3E%3C/radialGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='22' fill='url(%23bg)'/%3E%3Cpath d='M50 14 L68 21 L75 38 L75 62 L68 79 L50 86 L32 79 L25 62 L25 38 L32 21 Z' fill='%23D4A0CC' fill-opacity='.18' stroke='%23D4A0CC' stroke-width='2'/%3E%3Ccircle cx='42' cy='46' r='8' fill='%23D4A0CC' opacity='.6'/%3E%3Ccircle cx='58' cy='46' r='8' fill='%23C99AC8' opacity='.45'/%3E%3Ccircle cx='50' cy='60' r='8' fill='%23EDACC8' opacity='.75'/%3E%3Cpath d='M50 8 L51.5 13 L57 13 L52.5 16.5 L54 22 L50 18.5 L46 22 L47.5 16.5 L43 13 L48.5 13 Z' fill='%23DDB8DC' opacity='.7'/%3E%3C/svg%3E">
+
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+/* ── Splash ───────────────────────────────────────────────── */
+#splash {
+  position: fixed; inset: 0; z-index: 99999;
+  background: linear-gradient(155deg,#FDF0F5 0%,#F8E8F4 55%,#F2DCF0 100%);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+#splash.hide { animation: splashOut .65s ease forwards; pointer-events: none; }
+@keyframes splashOut {
+  0%   { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.04); }
+}
+@keyframes splashIconIn {
+  from { transform: scale(.35) rotate(-18deg); opacity: 0; }
+  to   { transform: scale(1)   rotate(0deg);  opacity: 1; }
+}
+@keyframes splashTextIn {
+  from { transform: translateY(14px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+.splash-icon  { animation: splashIconIn .7s cubic-bezier(.34,1.56,.64,1) both; }
+.splash-title { animation: splashTextIn .55s .22s ease both; }
+.splash-sub   { animation: splashTextIn .55s .38s ease both; }
+
+/* ── Reset & Base ─────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --text-main:   #B07AAE;
+  --text-sub:    #C99AC8;
+  --text-muted:  #DDB8DC;
+  --accent:      #D4A0CC;
+  --silver:      #C0BAD0;
+  --sakura:      #EDACC8;
+  --highlight:   #F5D0E8;
+  --border:      rgba(210,175,220,0.42);
+  --border-soft: rgba(230,200,238,0.38);
+  --card-bg:     rgba(255,255,255,0.88);
+  --hero-bg:     linear-gradient(135deg,rgba(255,245,252,0.97),rgba(248,232,248,0.94));
+  --bg-grad:     linear-gradient(155deg,#FDF0F5 0%,#F8E8F4 55%,#F2DCF0 100%);
+}
+html, body {
+  height: 100%;
+  font-family: 'Noto Sans JP', sans-serif;
+  background: var(--bg-grad);
+  color: var(--text-main);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-thumb { background: rgba(212,160,204,0.3); border-radius: 10px; }
+
+/* ── Layout ───────────────────────────────────────────────── */
+#app {
+  max-width: 420px;
+  margin: 0 auto;
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ── Animations ───────────────────────────────────────────── */
+@keyframes petalFall {
+  0%   { transform: translateY(0)     rotate(0deg)   translateX(0);    opacity: .15; }
+  50%  { transform: translateY(50vh)  rotate(190deg) translateX(12px); opacity: .09; }
+  100% { transform: translateY(110vh) rotate(360deg) translateX(-8px); opacity: 0;   }
+}
+@keyframes confettiFall { to { transform: translateY(110vh) rotate(720deg); opacity: 0; } }
+@keyframes fadeUp   { from { transform: translateY(14px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes shimmerC {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+@keyframes heartbeat { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+@keyframes levelPop  {
+  0%  { transform: scale(.55) translateY(20px); opacity: 0; }
+  65% { transform: scale(1.1) translateY(-4px); }
+  100%{ transform: scale(1)   translateY(0);    opacity: 1; }
+}
+@keyframes toastIn {
+  from { transform: translateX(-50%) translateY(-10px); opacity: 0; }
+  to   { transform: translateX(-50%) translateY(0);     opacity: 1; }
+}
+@keyframes floatUp { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+
+/* ── Petals ───────────────────────────────────────────────── */
+#petals {
+  position: fixed; inset: 0;
+  pointer-events: none; overflow: hidden; z-index: 0;
+}
+.petal {
+  position: absolute; top: -30px;
+  font-size: 12px; opacity: .13;
+}
+
+/* ── Header ───────────────────────────────────────────────── */
+#header {
+  position: relative; z-index: 10;
+  padding: 20px 22px 14px;
+  background: rgba(253,245,252,0.78);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border-soft);
+}
+.brand-line {
+  text-align: center; font-size: 9px; letter-spacing: 7px;
+  font-weight: 700; margin-bottom: 12px;
+  background: linear-gradient(90deg, var(--text-muted), var(--silver), var(--text-muted));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.header-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+.level-name  { font-size: 18px; font-weight: 900; color: var(--text-main); line-height: 1.2; }
+.level-sub   { font-size: 11px; color: var(--text-muted); font-weight: 700; margin-top: 2px; }
+.xp-val      { font-size: 26px; font-weight: 900; color: var(--accent); line-height: 1; text-align: right; }
+.xp-next     { font-size: 10px; color: var(--text-muted); font-weight: 700; margin-top: 2px; text-align: right; }
+.xp-bar      { height: 7px; background: rgba(221,184,220,.25); border-radius: 10px; overflow: hidden; }
+.xp-fill {
+  height: 100%; border-radius: 10px;
+  background: linear-gradient(90deg,#F5D0E8,#EDACC8,#D4A0CC,#DDB8DC,#F5D0E8);
+  background-size: 300% auto;
+  animation: shimmerC 3.5s linear infinite;
+  transition: width .65s cubic-bezier(.34,1.56,.64,1);
+}
+
+/* ── Content ──────────────────────────────────────────────── */
+#content {
+  position: relative; z-index: 1;
+  padding: 14px 16px 90px;
+  overflow-y: auto;
+  height: calc(100vh - 126px);
+}
+
+/* ── Cards ────────────────────────────────────────────────── */
+.card {
+  background: var(--card-bg);
+  backdrop-filter: blur(18px);
+  border-radius: 22px;
+  border: 1px solid var(--border);
+  padding: 18px;
+  margin-bottom: 12px;
+  animation: fadeUp .35s ease;
+  box-shadow: 0 2px 20px rgba(176,122,174,.07), 0 1px 4px rgba(176,122,174,.04);
+}
+.card-hero {
+  background: var(--hero-bg);
+  border-color: var(--border);
+}
+.section-label {
+  font-size: 10px; font-weight: 700; color: var(--text-muted);
+  letter-spacing: 2px; margin-bottom: 8px; margin-left: 4px;
+}
+.divider {
+  height: 1px;
+  background: linear-gradient(90deg,transparent,rgba(212,160,204,.38),transparent);
+  margin: 2px 0 12px;
+}
+
+/* ── Habit buttons ────────────────────────────────────────── */
+.habit-btn {
+  width: 100%; background: rgba(255,255,255,.82);
+  color: var(--text-main); border-radius: 16px;
+  padding: 13px 15px; border: 1px solid var(--border-soft);
+  cursor: pointer; display: flex; align-items: center; gap: 12px;
+  font-family: 'Noto Sans JP', sans-serif; font-size: 14px; font-weight: 500;
+  transition: all .2s; margin-bottom: 8px;
+  box-shadow: 0 1px 6px rgba(176,122,174,.05); text-align: left;
+}
+.habit-btn:hover { background: rgba(255,255,255,.97); transform: translateX(3px); }
+.habit-btn.done  { background: rgba(248,238,252,.75); border-color: rgba(212,160,204,.4); color: var(--text-muted); }
+.xp-badge {
+  font-size: 10px; color: var(--accent);
+  background: rgba(212,160,204,.18);
+  padding: 3px 10px; border-radius: 20px; font-weight: 700; white-space: nowrap;
+}
+.check-mark { font-size: 15px; color: var(--accent); }
+
+/* ── Morning rows ─────────────────────────────────────────── */
+.morning-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px; background: rgba(255,255,255,.78);
+  border-radius: 16px; margin-bottom: 8px;
+  border: 1px solid var(--border-soft); transition: all .2s;
+}
+.morning-row.done      { opacity: .35; }
+.morning-row.skip-hint { border-color: rgba(237,172,200,.55); background: rgba(255,245,252,.88); }
+.morning-label { font-size: 14px; font-weight: 700; color: var(--text-main); }
+.morning-label.done { text-decoration: line-through; }
+.morning-meta  { font-size: 11px; color: var(--text-muted); display: flex; gap: 6px; margin-top: 1px; }
+.skip-warn { color: #EDACC8; font-weight: 700; }
+.optional  { color: #D8C088; }
+
+/* ── Pill buttons ─────────────────────────────────────────── */
+.pill-btn {
+  border: none; cursor: pointer; border-radius: 50px;
+  font-family: 'Noto Sans JP', sans-serif; font-weight: 700;
+  transition: all .18s;
+}
+.pill-btn:active { transform: scale(.93); }
+.btn-timer-sm {
+  background: rgba(212,160,204,.18); color: var(--text-main);
+  padding: 6px 10px; font-size: 12px; border: 1px solid var(--border-soft);
+}
+.btn-done {
+  background: rgba(212,160,204,.25); color: var(--text-muted);
+  padding: 6px 12px; font-size: 12px;
+}
+.btn-complete {
+  background: linear-gradient(135deg,#F5D0E8,#EDACC8); color: white;
+  padding: 6px 12px; font-size: 12px;
+  box-shadow: 0 2px 8px rgba(237,172,200,.4);
+}
+.btn-pause {
+  background: rgba(212,160,204,.2); color: var(--text-main);
+  padding: 9px 18px; font-size: 13px; border: 1px solid var(--border-soft);
+}
+.btn-stop {
+  background: rgba(237,172,200,.18); color: #EDACC8;
+  padding: 9px 18px; font-size: 13px; border: 1px solid rgba(237,172,200,.35);
+}
+.btn-start-main {
+  background: linear-gradient(135deg,#F5D0E8,#EDACC8); color: white;
+  padding: 10px 18px; font-size: 13px;
+  box-shadow: 0 3px 12px rgba(237,172,200,.38);
+}
+.btn-num {
+  background: rgba(212,160,204,.18); color: var(--text-main);
+  width: 38px; height: 38px; font-size: 18px; border: 1px solid var(--border-soft);
+}
+
+/* ── Inputs ───────────────────────────────────────────────── */
+input[type="time"], input[type="text"] {
+  background: rgba(255,255,255,.88);
+  border: 1px solid var(--border);
+  border-radius: 10px; color: var(--text-main);
+  padding: 7px 11px;
+  font-family: 'Noto Sans JP', sans-serif; font-size: 17px; font-weight: 700;
+}
+input[type="text"] { font-size: 14px; outline: none; }
+input[type="text"]:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(212,160,204,.18); }
+input[type="time"]::-webkit-calendar-picker-indicator { opacity: .4; cursor: pointer; }
+
+/* ── Preset grid ──────────────────────────────────────────── */
+.preset-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+.preset-btn {
+  background: rgba(255,255,255,.84); color: var(--text-main);
+  padding: 12px 8px; border-radius: 16px;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  font-size: 12px; font-weight: 700;
+  border: 1px solid var(--border-soft);
+  box-shadow: 0 1px 6px rgba(176,122,174,.06);
+  cursor: pointer; font-family: 'Noto Sans JP', sans-serif;
+  transition: all .18s;
+}
+.preset-btn:active { transform: scale(.95); }
+.preset-emoji { font-size: 20px; }
+.preset-name  { font-size: 10px; line-height: 1.3; text-align: center; }
+.preset-time  { font-size: 10px; color: var(--accent); }
+
+/* ── Stats ────────────────────────────────────────────────── */
+.stats-row { display: flex; justify-content: space-around; text-align: center; }
+.stat-val  { font-size: 24px; font-weight: 900; }
+.stat-lbl  { font-size: 10px; color: var(--text-muted); font-weight: 700; margin-top: 1px; }
+
+/* ── Dots ─────────────────────────────────────────────────── */
+.dots-row { display: flex; justify-content: center; gap: 5px; margin-top: 8px; }
+.dot { width: 7px; height: 7px; border-radius: 50%; transition: background .3s; }
+
+/* ── Clock ────────────────────────────────────────────────── */
+.clock-main { font-size: 42px; font-weight: 900; color: var(--text-main); letter-spacing: 2px; line-height: 1; }
+.clock-sec  { font-size: 20px; color: var(--text-muted); }
+.status-badge {
+  display: inline-block; padding: 7px 20px; border-radius: 50px;
+  font-weight: 900; font-size: 13px; margin-top: 10px;
+}
+
+/* ── Timer SVG ────────────────────────────────────────────── */
+.timer-wrap { display: flex; justify-content: center; }
+
+/* ── Custom timer row ─────────────────────────────────────── */
+.custom-row { display: flex; gap: 8px; align-items: center; }
+.custom-mins { flex: 1; text-align: center; font-size: 26px; font-weight: 900; color: var(--text-main); }
+
+/* ── Bottom Nav ───────────────────────────────────────────── */
+#nav {
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 420px;
+  background: rgba(253,245,252,.97); backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border-soft);
+  display: flex; padding: 8px 0 14px;
+  box-shadow: 0 -4px 20px rgba(176,122,174,.08);
+  z-index: 100;
+}
+.nav-btn {
+  flex: 1; background: transparent; border: none; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 4px 0; font-family: 'Noto Sans JP', sans-serif;
+  font-size: 10px; font-weight: 700; color: rgba(176,122,174,.3);
+  transition: all .2s;
+}
+.nav-btn.active { color: var(--text-main); }
+.nav-btn.active .nav-icon { transform: scale(1.15); filter: drop-shadow(0 2px 5px rgba(176,122,174,.45)); }
+.nav-icon { transition: transform .2s; display: flex; align-items: center; justify-content: center; }
+
+/* ── Toast ────────────────────────────────────────────────── */
+#toast {
+  position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+  background: rgba(255,255,255,.97); color: var(--text-main);
+  padding: 9px 22px; border-radius: 50px; font-weight: 700; font-size: 13px;
+  z-index: 9999; white-space: nowrap; pointer-events: none;
+  box-shadow: 0 4px 22px rgba(176,122,174,.18), 0 0 0 1px var(--border);
+  animation: toastIn .3s ease;
+  display: none;
+}
+
+/* ── Level-up overlay ─────────────────────────────────────── */
+#levelup-overlay {
+  position: fixed; inset: 0; display: none;
+  align-items: center; justify-content: center;
+  background: rgba(252,240,252,.92); backdrop-filter: blur(12px); z-index: 9998;
+}
+#levelup-overlay.show { display: flex; }
+.levelup-card {
+  background: rgba(255,255,255,.97); border-radius: 32px;
+  padding: 38px 44px; text-align: center; animation: levelPop .5s ease;
+  box-shadow: 0 8px 48px rgba(176,122,174,.2), 0 0 0 1px var(--border);
+}
+.levelup-emoji { font-size: 50px; animation: heartbeat 1s ease infinite; display: block; margin-bottom: 8px; }
+.levelup-title { font-size: 26px; font-weight: 900; color: var(--text-main); margin-bottom: 4px; }
+.levelup-name  { font-size: 14px; font-weight: 700; color: var(--text-sub); }
+
+/* ── Confetti ─────────────────────────────────────────────── */
+#confetti-layer {
+  position: fixed; inset: 0; pointer-events: none; z-index: 9997; overflow: hidden;
+}
+.confetti-piece {
+  position: absolute; top: -20px; border-radius: 50%;
+  animation: confettiFall 1.9s ease-in forwards;
+}
+
+/* ── Active timer banner ──────────────────────────────────── */
+.active-timer-mini {
+  text-align: center; background: rgba(252,245,255,.92);
+  border: 1px solid var(--border);
+}
+
+/* ── Hero octagon ─────────────────────────────────────────── */
+.hero-octagon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 64px; height: 64px; margin-bottom: 10px;
+  animation: floatUp 3s ease infinite;
+  background: linear-gradient(135deg,rgba(253,240,252,.9),rgba(240,228,248,.9));
+  border: 1px solid var(--border);
+  clip-path: polygon(30% 0%,70% 0%,100% 30%,100% 70%,70% 100%,30% 100%,0% 70%,0% 30%);
+}
+
+/* ── Tab panels ───────────────────────────────────────────── */
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ── Tips / alert cards ───────────────────────────────────── */
+.tip-card   { background: rgba(255,255,255,.62); border: 1px solid var(--border-soft); }
+.alert-card { background: rgba(255,242,248,.9);  border: 1px solid rgba(237,172,200,.42); }
+.tip-title  { font-size: 13px; font-weight: 900; color: var(--text-main); margin-bottom: 5px; }
+.tip-body   { font-size: 13px; line-height: 1.78; color: var(--text-sub); }
+.alert-title{ font-size: 15px; font-weight: 900; color: #EDACC8; margin-bottom: 6px; }
+.alert-body { font-size: 13px; color: var(--text-sub); line-height: 1.72; }
+.alert-foot { font-size: 11px; color: var(--text-muted); margin-top: 5px; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- Splash screen -->
+  <div id="splash">
+    <div style="position:absolute;top:14%;left:10%;font-size:24px;opacity:.22;transform:rotate(-20deg)">🌸</div>
+    <div style="position:absolute;top:20%;right:9%;font-size:17px;opacity:.18;transform:rotate(14deg)">✿</div>
+    <div style="position:absolute;bottom:26%;left:7%;font-size:15px;opacity:.16;transform:rotate(32deg)">🌸</div>
+    <div style="position:absolute;bottom:18%;right:12%;font-size:21px;opacity:.2;transform:rotate(-12deg)">✿</div>
+    <div class="splash-icon">
+      <svg width="120" height="120" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="sBg" cx="50%" cy="45%" r="55%">
+            <stop offset="0%" stop-color="#FFF5FB"/>
+            <stop offset="100%" stop-color="#EDD8F0"/>
+          </radialGradient>
+          <filter id="sShadow">
+            <feDropShadow dx="0" dy="4" stdDeviation="7" flood-color="#D4A0CC" flood-opacity="0.28"/>
+          </filter>
+        </defs>
+        <rect width="100" height="100" rx="26" fill="url(#sBg)" filter="url(#sShadow)"/>
+        <path d="M50 11 L70 19 L78 39 L78 61 L70 81 L50 89 L30 81 L22 61 L22 39 L30 19 Z"
+          fill="#D4A0CC" fill-opacity=".13" stroke="#C0BAD0" stroke-width="1.6"/>
+        <path d="M50 21 L63 27 L68 40 L68 60 L63 73 L50 79 L37 73 L32 60 L32 40 L37 27 Z"
+          fill="#EDACC8" fill-opacity=".07" stroke="#D4A0CC" stroke-width="1"/>
+        <circle cx="40" cy="47" r="9.5" fill="#D4A0CC" opacity=".58"/>
+        <circle cx="60" cy="47" r="9.5" fill="#C99AC8" opacity=".42"/>
+        <circle cx="50" cy="63" r="9.5" fill="#EDACC8" opacity=".74"/>
+        <ellipse cx="36.5" cy="43.5" rx="3.2" ry="2.1" fill="white" opacity=".48"/>
+        <path d="M72 16 L73.5 21 L78.5 22.5 L73.5 24 L72 29 L70.5 24 L65.5 22.5 L70.5 21 Z"
+          fill="#DDB8DC" opacity=".82"/>
+        <path d="M24 69 L24.9 71.8 L27.8 72.6 L24.9 73.4 L24 76.2 L23.1 73.4 L20.2 72.6 L23.1 71.8 Z"
+          fill="#EDACC8" opacity=".62"/>
+      </svg>
+    </div>
+    <div class="splash-title" style="margin-top:24px;text-align:center">
+      <div style="font-family:'Noto Sans JP',sans-serif;font-size:28px;font-weight:900;
+        letter-spacing:2px;
+        background:linear-gradient(135deg,#C99AC8,#B07AAE,#D4A0CC);
+        -webkit-background-clip:text;-webkit-text-fill-color:transparent;">
+        Bloom Routine
+      </div>
+    </div>
+    <div class="splash-sub" style="margin-top:10px;text-align:center">
+      <div style="font-family:'Noto Sans JP',sans-serif;font-size:11px;font-weight:700;
+        color:#DDB8DC;letter-spacing:5px;">
+        ✦ &nbsp;CRYSTAL BLOOM&nbsp; ✦
+      </div>
+    </div>
+  </div>
+
+  <!-- Petals -->
+  <div id="petals"></div>
+
+  <!-- Toast -->
+  <div id="toast"></div>
+
+  <!-- Level-up overlay -->
+  <div id="levelup-overlay">
+    <div class="levelup-card">
+      <span class="levelup-emoji">🌸</span>
+      <div class="levelup-title">Level Up !</div>
+      <div class="levelup-name" id="levelup-name"></div>
+    </div>
+  </div>
+
+  <!-- Confetti -->
+  <div id="confetti-layer"></div>
+
+  <!-- Header -->
+  <div id="header">
+    <div style="display:flex;align-items:center;justify-content:center;gap:9px;margin-bottom:12px">
+      <svg width="20" height="20" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <rect width="100" height="100" rx="18" fill="#F5D0E8" fill-opacity=".5"/>
+        <path d="M50 10 L66 17 L73 32 L73 68 L66 83 L50 90 L34 83 L27 68 L27 32 L34 17 Z"
+          fill="#D4A0CC" fill-opacity=".25" stroke="#C0BAD0" stroke-width="2"/>
+        <circle cx="38" cy="46" r="10" fill="#D4A0CC" opacity=".6"/>
+        <circle cx="62" cy="46" r="10" fill="#C99AC8" opacity=".42"/>
+        <circle cx="50" cy="63" r="10" fill="#EDACC8" opacity=".72"/>
+        <path d="M68 14 L69.3 18.2 L73.5 19.5 L69.3 20.8 L68 25 L66.7 20.8 L62.5 19.5 L66.7 18.2 Z"
+          fill="#DDB8DC" opacity=".85"/>
+      </svg>
+      <div style="font-size:15px;font-weight:900;letter-spacing:2px;
+        background:linear-gradient(135deg,#C99AC8,#B07AAE,#D4A0CC);
+        -webkit-background-clip:text;-webkit-text-fill-color:transparent;">
+        Bloom Routine
+      </div>
+      <svg width="20" height="20" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <rect width="100" height="100" rx="18" fill="#F5D0E8" fill-opacity=".5"/>
+        <path d="M50 10 L66 17 L73 32 L73 68 L66 83 L50 90 L34 83 L27 68 L27 32 L34 17 Z"
+          fill="#D4A0CC" fill-opacity=".25" stroke="#C0BAD0" stroke-width="2"/>
+        <circle cx="38" cy="46" r="10" fill="#D4A0CC" opacity=".6"/>
+        <circle cx="62" cy="46" r="10" fill="#C99AC8" opacity=".42"/>
+        <circle cx="50" cy="63" r="10" fill="#EDACC8" opacity=".72"/>
+        <path d="M68 14 L69.3 18.2 L73.5 19.5 L69.3 20.8 L68 25 L66.7 20.8 L62.5 19.5 L66.7 18.2 Z"
+          fill="#DDB8DC" opacity=".85"/>
+      </svg>
+    </div>
+    <div class="header-row">
+      <div>
+        <div class="level-name" id="hd-level-name">はじめの一歩</div>
+        <div class="level-sub" id="hd-level-sub">Lv.1 · 3日連続 🔥</div>
+      </div>
+      <div>
+        <div class="xp-val"><span id="hd-xp">0</span><span style="font-size:12px;margin-left:3px;font-weight:700">pt</span></div>
+        <div class="xp-next" id="hd-xp-next">あと 50pt で Lv.2</div>
+      </div>
+    </div>
+    <div class="xp-bar"><div class="xp-fill" id="xp-fill" style="width:0%"></div></div>
+  </div>
+
+  <!-- Content -->
+  <div id="content">
+
+    <!-- ── HOME ── -->
+    <div class="tab-panel active" id="panel-home">
+      <div class="card card-hero" style="text-align:center;padding:26px 20px;position:relative;overflow:hidden">
+        <div style="position:absolute;top:-30px;right:-30px;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,rgba(237,172,200,.15),transparent 70%);pointer-events:none"></div>
+        <div style="position:absolute;bottom:-20px;left:-20px;width:90px;height:90px;border-radius:50%;background:radial-gradient(circle,rgba(192,186,208,.18),transparent 70%);pointer-events:none"></div>
+        <div class="hero-octagon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+            <path d="M12 3 L17.2 5.8 L19 11 L17.2 16.2 L12 19 L6.8 16.2 L5 11 L6.8 5.8 Z" stroke="#D4A0CC" stroke-width="1.4" fill="#D4A0CC" fill-opacity="0.1"/>
+            <circle cx="9" cy="10" r="2.2" fill="#D4A0CC" opacity=".55"/>
+            <circle cx="15" cy="10" r="2.2" fill="#D4A0CC" opacity=".35"/>
+            <circle cx="12" cy="14" r="2.2" fill="#EDACC8" opacity=".7"/>
+            <path d="M12 3 L17.2 5.8 L19 11 L17.2 16.2 L12 19 L6.8 16.2 L5 11 L6.8 5.8 Z" stroke="#D4A0CC" stroke-width="1.4" fill="none"/>
+          </svg>
+        </div>
+        <div style="font-size:16px;font-weight:700;color:var(--text-main);line-height:1.65" id="home-greeting">おはよう、今日も素敵な一日に ✨</div>
+        <div style="margin-top:10px;font-size:12px;color:var(--text-muted);font-weight:700">
+          今日の習慣 <span id="home-done-count">0</span> / 6 クリア
+        </div>
+        <div class="dots-row" id="home-dots"></div>
+      </div>
+
+      <div class="section-label">QUICK CHECK</div>
+      <div id="home-quick-habits"></div>
+
+      <div class="card" style="margin-top:4px">
+        <div class="stats-row">
+          <div><div class="stat-val" style="color:#D4A0CC" id="stat-xp">0</div><div class="stat-lbl">合計pt</div></div>
+          <div><div class="stat-val" style="color:#E8A8B8">3🔥</div><div class="stat-lbl">連続日</div></div>
+          <div><div class="stat-val" style="color:#C99AC8" id="stat-done">0</div><div class="stat-lbl">今日</div></div>
+        </div>
+      </div>
+
+      <div class="card tip-card">
+        <div class="tip-title">✦ 今日のヒント</div>
+        <div class="tip-body">「すぐ元に戻す」が難しい時は、とりあえず置き場所をひとつ決めておこう。完璧じゃなくていい — 小さなひとつが、大きな変化のはじまり 🌸</div>
+      </div>
+    </div>
+
+    <!-- ── HABITS ── -->
+    <div class="tab-panel" id="panel-habits">
+      <div style="font-size:22px;font-weight:900;color:var(--text-main);margin-bottom:2px">今日の習慣</div>
+      <div style="font-size:12px;color:var(--text-muted);font-weight:700;margin-bottom:16px">タップして達成 — ポイントをゲット！</div>
+      <div id="habits-list"></div>
+      <div class="card card-hero" style="text-align:center" id="habits-summary">
+        <div style="font-size:18px;font-weight:900;color:var(--text-main)">
+          <span id="habits-done-count">0</span> / 6 達成
+        </div>
+      </div>
+    </div>
+
+    <!-- ── MORNING ── -->
+    <div class="tab-panel" id="panel-morning">
+      <div class="card card-hero" style="text-align:center" id="morning-clock-card">
+        <div class="clock-main" id="clock-display">
+          <span id="clock-hm">00:00</span><span class="clock-sec" id="clock-s">:00</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:13px">
+          <span style="font-size:12px;color:var(--text-muted);font-weight:700">出発時刻</span>
+          <input type="time" id="departure-input" value="08:00">
+        </div>
+        <div class="status-badge" id="status-badge">✦ 余裕あり！</div>
+        <div style="margin-top:8px;font-size:12px;color:var(--text-muted);font-weight:700" id="time-summary"></div>
+      </div>
+
+      <div class="card alert-card" id="skip-advice" style="display:none">
+        <div class="alert-title">⚡ 時間節約アドバイス</div>
+        <div class="alert-body" id="skip-advice-body"></div>
+        <div class="alert-foot">ヘアセットは明日たっぷりやろう 🎀</div>
+      </div>
+
+      <div class="card active-timer-mini" id="morning-timer-mini" style="display:none">
+        <div style="font-size:13px;font-weight:700;color:var(--text-main);margin-bottom:6px" id="morning-timer-label"></div>
+        <div class="timer-wrap"><svg id="morning-timer-svg" width="90" height="90" style="filter:drop-shadow(0 0 8px rgba(212,160,204,.5))"></svg></div>
+      </div>
+
+      <div class="section-label">MORNING ROUTINE</div>
+      <div id="morning-tasks-list"></div>
+    </div>
+
+    <!-- ── TIMER ── -->
+    <div class="tab-panel" id="panel-timer">
+      <div style="font-size:22px;font-weight:900;color:var(--text-main);margin-bottom:2px">タイマー</div>
+      <div style="font-size:12px;color:var(--text-muted);font-weight:700;margin-bottom:16px">時間を「見える化」して感覚を磨こう ✦</div>
+
+      <div class="card card-hero" id="timer-active-card" style="text-align:center;display:none;margin-bottom:14px">
+        <div style="font-size:16px;font-weight:900;color:var(--text-main);margin-bottom:10px" id="timer-active-label"></div>
+        <div class="timer-wrap"><svg id="main-timer-svg" width="144" height="144" style="filter:drop-shadow(0 0 8px rgba(212,160,204,.5))"></svg></div>
+        <div style="display:flex;gap:8px;justify-content:center;margin-top:12px">
+          <button class="pill-btn btn-pause" id="btn-pause">⏸ 一時停止</button>
+          <button class="pill-btn btn-stop"  id="btn-stop">⏹ 終了</button>
+        </div>
+      </div>
+
+      <div class="section-label">QUICK START</div>
+      <div class="preset-grid" id="preset-grid"></div>
+
+      <div class="card">
+        <div style="font-size:14px;font-weight:900;color:var(--text-main);margin-bottom:10px">✦ カスタムタイマー</div>
+        <input type="text" id="custom-label" value="集中タイム" style="width:100%;margin-bottom:10px">
+        <div class="custom-row">
+          <button class="pill-btn btn-num" id="btn-minus">−</button>
+          <div class="custom-mins"><span id="custom-mins-val">5</span>分</div>
+          <button class="pill-btn btn-num" id="btn-plus">+</button>
+          <button class="pill-btn btn-start-main" id="btn-custom-start">スタート 🌸</button>
+        </div>
+      </div>
+
+      <div class="card tip-card">
+        <div class="tip-title">✦ 時間感覚のコツ</div>
+        <div class="tip-body">「5分」って思ったより短い！タイマーを使って、実際の感覚を体で覚えよう。毎日続けると「これは何分」が自然にわかるようになるよ 🌸</div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+
+  <!-- Bottom Nav -->
+  <nav id="nav">
+    <button class="nav-btn active" data-tab="home">
+      <span class="nav-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <ellipse cx="11.81" cy="7.01" rx="3.2" ry="2" fill="currentColor" fill-opacity=".55" transform="rotate(0,11.81,7.01)"/>
+          <ellipse cx="16.56" cy="9.55" rx="3.2" ry="2" fill="currentColor" fill-opacity=".55" transform="rotate(72,16.56,9.55)"/>
+          <ellipse cx="14.71" cy="15.24" rx="3.2" ry="2" fill="currentColor" fill-opacity=".55" transform="rotate(144,14.71,15.24)"/>
+          <ellipse cx="8.91" cy="15.24" rx="3.2" ry="2" fill="currentColor" fill-opacity=".55" transform="rotate(216,8.91,15.24)"/>
+          <ellipse cx="7.06" cy="9.55" rx="3.2" ry="2" fill="currentColor" fill-opacity=".55" transform="rotate(288,7.06,9.55)"/>
+          <circle cx="12" cy="12" r="3" fill="currentColor" opacity=".9"/>
+          <circle cx="12" cy="12" r="1.5" fill="white" opacity=".7"/>
+        </svg>
+      </span>
+      ホーム
+    </button>
+    <button class="nav-btn" data-tab="habits">
+      <span class="nav-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path d="M12 3 L17.2 5.8 L19 11 L17.2 16.2 L12 19 L6.8 16.2 L5 11 L6.8 5.8 Z" stroke="currentColor" stroke-width="1.4" fill="currentColor" fill-opacity=".1"/>
+          <circle cx="9"  cy="10" r="2.2" fill="currentColor" opacity=".55"/>
+          <circle cx="15" cy="10" r="2.2" fill="currentColor" opacity=".35"/>
+          <circle cx="12" cy="14" r="2.2" fill="currentColor" opacity=".65"/>
+          <path d="M12 3 L17.2 5.8 L19 11 L17.2 16.2 L12 19 L6.8 16.2 L5 11 L6.8 5.8 Z" stroke="currentColor" stroke-width="1.4" fill="none"/>
+        </svg>
+      </span>
+      習慣
+    </button>
+    <button class="nav-btn" data-tab="morning">
+      <span class="nav-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path d="M4 12 C4 9 8 6 12 6 C16 6 20 9 20 12" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+          <path d="M4 12 C6 10.5 9 9.5 12 10 C15 10.5 18 10.5 20 12" stroke="currentColor" stroke-width="1.2" fill="currentColor" fill-opacity=".3"/>
+          <path d="M4 12 C4 15.5 7 18 12 18 C17 18 20 15.5 20 12" stroke="currentColor" stroke-width="1.5" fill="currentColor" fill-opacity=".12" stroke-linecap="round"/>
+          <path d="M8 11.5 Q12 13.5 16 11.5" stroke="white" stroke-width="0.8" opacity=".55"/>
+        </svg>
+      </span>
+      朝の準備
+    </button>
+    <button class="nav-btn" data-tab="timer">
+      <span class="nav-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="13" r="8" fill="currentColor" fill-opacity=".1" stroke="currentColor" stroke-width="1.4"/>
+          <path d="M12 9 L12 13 L15 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M9 3 L15 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M12 3 L12 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </span>
+      タイマー
+    </button>
+  </nav>
+
+</div><!-- /app -->
+
+<script>
+// ── Data ──────────────────────────────────────────────────────
+const HABITS = [
+  { id:1, svgIcon:'ribbon',  label:'使ったものを元に戻す',    category:'お片付け', xp:10 },
+  { id:2, svgIcon:'flower',  label:'ゴミを捨てる',            category:'お片付け', xp:10 },
+  { id:3, svgIcon:'shoes',   label:'靴を並べる',              category:'お片付け', xp:10 },
+  { id:4, svgIcon:'bag',     label:'カバンの中を整理する',     category:'準備',     xp:15 },
+  { id:5, svgIcon:'book',    label:'教科書を元の場所に戻す',   category:'お片付け', xp:10 },
+  { id:6, svgIcon:'sparkle', label:'コップは台所へ持っていく', category:'お片付け', xp:10 },
+];
+
+const MORNING_TASKS = [
+  { id:'m1', emoji:'☀️',   label:'起きる',         duration:5,  flexible:false },
+  { id:'m2', emoji:'🫧',   label:'洗顔・歯磨き',   duration:10, flexible:false },
+  { id:'m3', emoji:'👗',   label:'着替え',         duration:8,  flexible:false },
+  { id:'m4', emoji:'🥐',   label:'朝ごはん',       duration:15, flexible:false },
+  { id:'m5', emoji:'💇‍♀️', label:'ヘアセット',     duration:20, flexible:true  },
+  { id:'m6', emoji:'🎒',   label:'持ち物確認',     duration:5,  flexible:false },
+  { id:'m7', emoji:'👟',   label:'靴を履く・並べる',duration:2,  flexible:false },
+];
+
+const PRESETS = [
+  { emoji:'💇‍♀️', label:'ヘアセット',  duration:10 },
+  { emoji:'🥐',  label:'朝ごはん',    duration:10 },
+  { emoji:'📖',  label:'宿題',        duration:25 },
+  { emoji:'🛁',  label:'お風呂',      duration:20 },
+  { emoji:'🌙',  label:'就寝準備',    duration:15 },
+  { emoji:'💄',  label:'メイク練習',  duration:15 },
+];
+
+const LEVELS = [
+  { level:1, name:'はじめの一歩',       minXP:0,   color:'#DDB8DC' },
+  { level:2, name:'習慣チャレンジャー',  minXP:50,  color:'#D4A0CC' },
+  { level:3, name:'ルーティンマスター',  minXP:150, color:'#C99AC8' },
+  { level:4, name:'時間の魔法使い',      minXP:300, color:'#B07AAE' },
+  { level:5, name:'生活の女王 ♛',       minXP:500, color:'#9A60A0' },
+];
+
+const GREETINGS = [
+  'おはよう、今日も素敵な一日に ✨',
+  '小さな積み重ねが輝きになる 🌸',
+  'ひとつずつ、丁寧に 🎀',
+  '今日のあなた、きっとキラキラ ✦',
+];
+
+// ── State ─────────────────────────────────────────────────────
+const state = {
+  xp: 0,
+  streak: 3,
+  checkedHabits: {},
+  checkedMorning: {},
+  timerActive: false,
+  timerSeconds: 0,
+  timerTotal: 0,
+  timerTask: null,
+  timerInterval: null,
+  customMins: 5,
+  currentTab: 'home',
+};
+
+function getLevel(xp) {
+  return [...LEVELS].reverse().find(l => xp >= l.minXP) || LEVELS[0];
+}
+
+// ── SVG helpers ───────────────────────────────────────────────
+function svgIcon(name, color='#D4A0CC') {
+  const c = color;
+  const icons = {
+    ribbon:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <path d="M12 12 L5 7 Q3 5.5 4 4 Q5 2.5 7 4 L12 8" fill="${c}" opacity=".5"/>
+      <path d="M12 12 L19 7 Q21 5.5 20 4 Q19 2.5 17 4 L12 8" fill="${c}" opacity=".5"/>
+      <path d="M12 12 L5 17 Q3 18.5 4 20 Q5 21.5 7 20 L12 16" fill="${c}" opacity=".35"/>
+      <path d="M12 12 L19 17 Q21 18.5 20 20 Q19 21.5 17 20 L12 16" fill="${c}" opacity=".35"/>
+      <circle cx="12" cy="12" r="2.5" fill="${c}"/></svg>`,
+    flower:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <ellipse cx="11.81" cy="7.01" rx="3.2" ry="2" fill="${c}" fill-opacity=".55" transform="rotate(0,11.81,7.01)"/>
+      <ellipse cx="16.56" cy="9.55" rx="3.2" ry="2" fill="${c}" fill-opacity=".55" transform="rotate(72,16.56,9.55)"/>
+      <ellipse cx="14.71" cy="15.24" rx="3.2" ry="2" fill="${c}" fill-opacity=".55" transform="rotate(144,14.71,15.24)"/>
+      <ellipse cx="8.91" cy="15.24" rx="3.2" ry="2" fill="${c}" fill-opacity=".55" transform="rotate(216,8.91,15.24)"/>
+      <ellipse cx="7.06" cy="9.55" rx="3.2" ry="2" fill="${c}" fill-opacity=".55" transform="rotate(288,7.06,9.55)"/>
+      <circle cx="12" cy="12" r="3" fill="${c}" opacity=".9"/>
+      <circle cx="12" cy="12" r="1.5" fill="white" opacity=".7"/></svg>`,
+    bag:     `<span style="font-size:19px">👜</span>`,
+    shoes:   `<span style="font-size:19px">👠</span>`,
+    book:    `<span style="font-size:19px">📖</span>`,
+    sparkle: `<span style="font-size:19px">✨</span>`,
+  };
+  return icons[name] || `<span style="font-size:19px">🌸</span>`;
+}
+
+// ── Petals ────────────────────────────────────────────────────
+(function initPetals() {
+  const container = document.getElementById('petals');
+  for (let i = 0; i < 14; i++) {
+    const el = document.createElement('div');
+    el.className = 'petal';
+    el.style.left = `${(i * 7.14) % 100}%`;
+    el.style.fontSize = `${9 + (i % 3) * 4}px`;
+    el.style.animationName = 'petalFall';
+    el.style.animationDuration = `${10 + (i % 4) * 4}s`;
+    el.style.animationDelay = `${i * 0.6}s`;
+    el.style.animationTimingFunction = 'linear';
+    el.style.animationIterationCount = 'infinite';
+    el.textContent = i % 2 === 0 ? '🌸' : '✿';
+    container.appendChild(el);
+  }
+})();
+
+// ── Toast ─────────────────────────────────────────────────────
+let toastTimer = null;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.display = 'block';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.style.display = 'none'; }, 2600);
+}
+
+// ── Confetti ──────────────────────────────────────────────────
+function fireConfetti() {
+  const layer = document.getElementById('confetti-layer');
+  layer.innerHTML = '';
+  const colors = ['#F5D0E8','#EDD0F0','#EDACC8','#DDB8DC','#FFF0F8','#E8D0F8'];
+  for (let i = 0; i < 28; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    const size = 5 + Math.random() * 7;
+    el.style.cssText = `
+      left:${Math.random()*100}%;
+      width:${size}px; height:${size}px;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      border-radius:${Math.random()>.5?'50%':'3px'};
+      animation-duration:1.9s;
+      animation-delay:${Math.random()*.5}s;
+    `;
+    layer.appendChild(el);
+    setTimeout(() => el.remove(), 2500);
+  }
+}
+
+// ── Level Up ──────────────────────────────────────────────────
+function showLevelUp(lv) {
+  const overlay = document.getElementById('levelup-overlay');
+  document.getElementById('levelup-name').textContent = `Lv.${lv.level}  ${lv.name}`;
+  overlay.classList.add('show');
+  setTimeout(() => overlay.classList.remove('show'), 3000);
+}
+
+// ── Header update ─────────────────────────────────────────────
+function updateHeader() {
+  const lv = getLevel(state.xp);
+  const nextLv = LEVELS.find(l => l.minXP > state.xp);
+  const pct = nextLv
+    ? ((state.xp - lv.minXP) / (nextLv.minXP - lv.minXP)) * 100
+    : 100;
+
+  document.getElementById('hd-level-name').textContent = lv.name;
+  document.getElementById('hd-level-sub').textContent  = `Lv.${lv.level} · ${state.streak}日連続 🔥`;
+  document.getElementById('hd-xp').textContent         = state.xp;
+  document.getElementById('hd-xp-next').textContent    = nextLv
+    ? `あと ${nextLv.minXP - state.xp}pt で Lv.${lv.level+1}` : 'MAX ✦';
+  document.getElementById('xp-fill').style.width = Math.min(pct, 100) + '%';
+  document.getElementById('stat-xp').textContent   = state.xp;
+  document.getElementById('stat-done').textContent  = Object.keys(state.checkedHabits).length;
+}
+
+// ── Tab switching ─────────────────────────────────────────────
+function switchTab(tabId) {
+  state.currentTab = tabId;
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + tabId).classList.add('active');
+  document.querySelector(`.nav-btn[data-tab="${tabId}"]`).classList.add('active');
+
+  if (tabId === 'home')    renderHome();
+  if (tabId === 'habits')  renderHabits();
+  if (tabId === 'morning') renderMorning();
+}
+
+document.querySelectorAll('.nav-btn').forEach(btn => {
+  btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+});
+
+// ── Habit rendering ───────────────────────────────────────────
+function habitBtnHTML(h, showFull) {
+  const done = state.checkedHabits[h.id];
+  const iconColor = done ? '#DDB8DC' : '#D4A0CC';
+  const labelColor = done ? 'var(--text-muted)' : 'var(--text-main)';
+  const right = done
+    ? `<span style="font-size:15px;color:#D4A0CC">✓</span>`
+    : `<span class="xp-badge">+${h.xp}pt</span>`;
+  const sub = done && showFull
+    ? `<div style="font-size:10px;color:#D4A0CC;margin-top:1px">クリア済み ✓</div>` : '';
+
+  return `<button class="habit-btn${done?' done':''}" data-habit-id="${h.id}" style="cursor:pointer">
+    <span>${svgIcon(h.svgIcon, iconColor)}</span>
+    <div style="flex:1">
+      <div style="color:${labelColor}">${h.label}</div>${sub}
+    </div>
+    ${right}
+  </button>`;
+}
+
+function renderHome() {
+  const doneCount = Object.keys(state.checkedHabits).length;
+  document.getElementById('home-done-count').textContent = doneCount;
+  document.getElementById('stat-done').textContent = doneCount;
+
+  // greeting
+  document.getElementById('home-greeting').textContent =
+    GREETINGS[Math.floor(Date.now() / 8000000) % GREETINGS.length];
+
+  // dots
+  const dots = document.getElementById('home-dots');
+  dots.innerHTML = HABITS.map(h => {
+    const on = state.checkedHabits[h.id];
+    return `<div class="dot" style="background:${on?'#D4A0CC':'rgba(212,160,204,0.25)'};box-shadow:${on?'0 0 5px rgba(212,160,204,0.6)':'none'}"></div>`;
+  }).join('');
+
+  // quick habits (first 3)
+  const qc = document.getElementById('home-quick-habits');
+  qc.innerHTML = HABITS.slice(0,3).map(h => habitBtnHTML(h, false)).join('');
+  qc.querySelectorAll('.habit-btn').forEach(btn => {
+    btn.addEventListener('click', () => toggleHabit(+btn.dataset.habitId));
+  });
+}
+
+function renderHabits() {
+  const doneCount = Object.keys(state.checkedHabits).length;
+  document.getElementById('habits-done-count').textContent = doneCount;
+
+  const categories = [...new Set(HABITS.map(h => h.category))];
+  let html = '';
+  categories.forEach(cat => {
+    html += `<div class="section-label">${cat.toUpperCase()}</div>`;
+    HABITS.filter(h => h.category === cat).forEach(h => {
+      html += habitBtnHTML(h, true);
+    });
+    html += '<div class="divider"></div>';
+  });
+
+  const allDone = doneCount === HABITS.length;
+  document.getElementById('habits-list').innerHTML = html;
+  document.getElementById('habits-list').querySelectorAll('.habit-btn').forEach(btn => {
+    btn.addEventListener('click', () => toggleHabit(+btn.dataset.habitId));
+  });
+
+  const summary = document.getElementById('habits-summary');
+  summary.querySelector('div').innerHTML =
+    `<span style="font-size:18px;font-weight:900;color:var(--text-main)">${doneCount} / ${HABITS.length} 達成</span>`
+    + (allDone ? `<div style="font-size:13px;color:#D4A0CC;margin-top:5px;font-weight:700">全部クリア！ボーナスポイント +30pt 🎉</div>` : '');
+}
+
+function toggleHabit(id) {
+  if (state.checkedHabits[id]) return;
+  const h = HABITS.find(x => x.id === id);
+  if (!h) return;
+
+  const prevLv = getLevel(state.xp).level;
+  state.checkedHabits[id] = true;
+  state.xp += h.xp;
+
+  const newLv = getLevel(state.xp);
+  if (newLv.level > prevLv) showLevelUp(newLv);
+
+  fireConfetti();
+  showToast(`+${h.xp} pt  🌸  ${h.label}`);
+  updateHeader();
+
+  if (state.currentTab === 'home')   renderHome();
+  if (state.currentTab === 'habits') renderHabits();
+}
+
+// ── Morning ───────────────────────────────────────────────────
+function calcMorningStatus() {
+  const [depH, depM] = document.getElementById('departure-input').value.split(':').map(Number);
+  const now = new Date();
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+  const depMins = depH * 60 + depM;
+  const minsLeft = depMins - nowMins;
+  const totalNeeded = MORNING_TASKS.reduce((a, t) => a + (state.checkedMorning[t.id] ? 0 : t.duration), 0);
+  const isCritical = minsLeft > 0 && minsLeft < totalNeeded * 0.7;
+  const isLate     = minsLeft > 0 && minsLeft < totalNeeded;
+  const flexRem    = MORNING_TASKS.filter(t => t.flexible && !state.checkedMorning[t.id]);
+  const flexSave   = flexRem.reduce((a, t) => a + t.duration, 0);
+  const canMake    = minsLeft >= totalNeeded - flexSave;
+  return { minsLeft, totalNeeded, isCritical, isLate, flexRem, flexSave, canMake };
+}
+
+function renderMorning() {
+  const { minsLeft, totalNeeded, isCritical, isLate, flexRem, flexSave, canMake } = calcMorningStatus();
+
+  // status badge
+  const badge = document.getElementById('status-badge');
+  let sc, sb, sm;
+  if (isCritical) { sc='#E8A8B8'; sb='rgba(255,242,248,0.92)'; sm='⚡ 急いで！ギリギリかも'; }
+  else if (isLate){ sc='#D8C080'; sb='rgba(255,252,235,0.92)'; sm='⚠️ 少し急ごう'; }
+  else if (minsLeft > 0) { sc='#D4A0CC'; sb='rgba(252,245,255,0.92)'; sm='✦ 余裕あり！'; }
+  else if (minsLeft === 0) { sc='#D4A0CC'; sb='rgba(252,245,255,0.92)'; sm='🌸 出発！'; }
+  else { sc='#D4A0CC'; sb='rgba(252,245,255,0.92)'; sm='準備スタート！'; }
+
+  badge.style.cssText = `display:inline-block;padding:7px 20px;border-radius:50px;font-weight:900;font-size:13px;margin-top:10px;color:${sc};background:${sb};box-shadow:0 2px 10px ${sc}28`;
+  badge.textContent = sm;
+
+  document.getElementById('time-summary').innerHTML = minsLeft > 0
+    ? `残り <strong style="color:${sc}">${minsLeft}分</strong>　必要 <strong>${totalNeeded}分</strong>` : '';
+
+  // skip advice
+  const advice = document.getElementById('skip-advice');
+  if (isCritical && flexRem.length > 0) {
+    advice.style.display = 'block';
+    document.getElementById('skip-advice-body').innerHTML =
+      flexRem.map(t=>`「${t.label}」`).join('と') +
+      `を省略すれば<strong style="color:#EDACC8"> ${flexSave}分</strong>節約できるよ！` +
+      (canMake ? ' 🌸 間に合う！' : ' まだギリギリかも💦');
+  } else {
+    advice.style.display = 'none';
+  }
+
+  // tasks list
+  const list = document.getElementById('morning-tasks-list');
+  list.innerHTML = MORNING_TASKS.map(task => {
+    const done = state.checkedMorning[task.id];
+    const skipHint = isCritical && task.flexible && !done;
+    const btnTimer = !done ? `<button class="pill-btn btn-timer-sm" data-task-id="${task.id}">⏱</button>` : '';
+    const btnDone  = `<button class="pill-btn ${done?'btn-done':'btn-complete'}" data-done-id="${task.id}">${done?'✓':'完了'}</button>`;
+    return `<div class="morning-row${done?' done':''}${skipHint?' skip-hint':''}">
+      <span style="font-size:18px">${task.emoji}</span>
+      <div style="flex:1">
+        <div class="morning-label${done?' done':''}">${task.label}</div>
+        <div class="morning-meta">
+          <span>⏱ ${task.duration}分</span>
+          ${task.flexible?`<span class="optional">省略可</span>`:''}
+          ${skipHint?`<span class="skip-warn">← 今日は省いて！</span>`:''}
+        </div>
+      </div>
+      <div style="display:flex;gap:5px">${btnTimer}${btnDone}</div>
+    </div>`;
+  }).join('');
+
+  list.querySelectorAll('[data-done-id]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.doneId;
+      if (state.checkedMorning[id]) return;
+      state.checkedMorning[id] = true;
+      showToast(`🎀 ${MORNING_TASKS.find(t=>t.id===id).label} — 完了！`);
+      renderMorning();
+    });
+  });
+  list.querySelectorAll('[data-task-id]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const task = MORNING_TASKS.find(t => t.id === btn.dataset.taskId);
+      if (task) startTimer(task.emoji + ' ' + task.label, task.duration);
+    });
+  });
+}
+
+// live clock
+function tickClock() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  const s = String(now.getSeconds()).padStart(2,'0');
+  document.getElementById('clock-hm').textContent = `${h}:${m}`;
+  document.getElementById('clock-s').textContent  = `:${s}`;
+  if (state.currentTab === 'morning') renderMorning();
+}
+setInterval(tickClock, 1000);
+tickClock();
+
+document.getElementById('departure-input').addEventListener('change', () => {
+  if (state.currentTab === 'morning') renderMorning();
+});
+
+// ── Timer ─────────────────────────────────────────────────────
+function drawTimerSVG(svgEl, seconds, total, size) {
+  const r = (size - 14) / 2;
+  const circ = 2 * Math.PI * r;
+  const progress = total > 0 ? seconds / total : 0;
+  const dash = circ * (1 - progress);
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  const urgent = seconds <= 60 && seconds > 0;
+  const strokeColor = urgent ? '#EDACC8' : '#D4A0CC';
+  const cx = size / 2, cy = size / 2;
+  const timeStr = `${mins}:${String(secs).padStart(2,'0')}`;
+
+  svgEl.setAttribute('width', size);
+  svgEl.setAttribute('height', size);
+  svgEl.setAttribute('viewBox', `0 0 ${size} ${size}`);
+  svgEl.innerHTML = `
+    <g transform="rotate(-90,${cx},${cy})">
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(221,184,220,0.28)" stroke-width="7"/>
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none"
+        stroke="${strokeColor}" stroke-width="7"
+        stroke-dasharray="${circ}" stroke-dashoffset="${dash}"
+        stroke-linecap="round"
+        style="transition:stroke-dashoffset 1s linear,stroke 0.3s"/>
+    </g>
+    <text x="${cx}" y="${cy+7}" text-anchor="middle"
+      fill="#B07AAE" font-size="${urgent?20:17}" font-weight="700"
+      font-family="'Noto Sans JP',sans-serif">${timeStr}</text>`;
+}
+
+function startTimer(label, durationMins) {
+  if (state.timerInterval) clearInterval(state.timerInterval);
+  state.timerSeconds = durationMins * 60;
+  state.timerTotal   = durationMins * 60;
+  state.timerTask    = { label, duration: durationMins };
+  state.timerActive  = true;
+
+  const card  = document.getElementById('timer-active-card');
+  const lbl   = document.getElementById('timer-active-label');
+  const svg   = document.getElementById('main-timer-svg');
+  card.style.display = 'block';
+  lbl.textContent = label;
+  drawTimerSVG(svg, state.timerSeconds, state.timerTotal, 144);
+
+  // mini in morning tab
+  updateMorningMiniTimer();
+
+  showToast(`${label} タイマー スタート♡`);
+
+  state.timerInterval = setInterval(() => {
+    if (!state.timerActive) return;
+    state.timerSeconds--;
+    if (state.timerSeconds <= 0) {
+      clearInterval(state.timerInterval);
+      state.timerActive  = false;
+      state.timerTask    = null;
+      card.style.display = 'none';
+      updateMorningMiniTimer();
+      showToast('✨ 時間です！次のステップへ');
+      return;
+    }
+    drawTimerSVG(svg, state.timerSeconds, state.timerTotal, 144);
+    updateMorningMiniTimer();
+  }, 1000);
+}
+
+function updateMorningMiniTimer() {
+  const mini = document.getElementById('morning-timer-mini');
+  const miniSvg = document.getElementById('morning-timer-svg');
+  if (state.timerActive && state.timerTask) {
+    mini.style.display = 'block';
+    document.getElementById('morning-timer-label').textContent = state.timerTask.label;
+    drawTimerSVG(miniSvg, state.timerSeconds, state.timerTotal, 90);
+  } else {
+    mini.style.display = 'none';
+  }
+}
+
+document.getElementById('btn-pause').addEventListener('click', () => {
+  state.timerActive = !state.timerActive;
+  document.getElementById('btn-pause').textContent = state.timerActive ? '⏸ 一時停止' : '▶ 再開';
+});
+
+document.getElementById('btn-stop').addEventListener('click', () => {
+  if (state.timerInterval) clearInterval(state.timerInterval);
+  state.timerActive  = false;
+  state.timerTask    = null;
+  state.timerSeconds = 0;
+  document.getElementById('timer-active-card').style.display = 'none';
+  updateMorningMiniTimer();
+});
+
+// Presets
+(function renderPresets() {
+  const grid = document.getElementById('preset-grid');
+  grid.innerHTML = PRESETS.map((p, i) =>
+    `<button class="preset-btn" data-preset="${i}">
+      <span class="preset-emoji">${p.emoji}</span>
+      <span class="preset-name">${p.label}</span>
+      <span class="preset-time">${p.duration}分</span>
+    </button>`
+  ).join('');
+  grid.querySelectorAll('.preset-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const p = PRESETS[+btn.dataset.preset];
+      switchTab('timer');
+      startTimer(p.emoji + ' ' + p.label, p.duration);
+    });
+  });
+})();
+
+// Custom timer
+const customMinsEl = document.getElementById('custom-mins-val');
+document.getElementById('btn-minus').addEventListener('click', () => {
+  state.customMins = Math.max(1, state.customMins - 1);
+  customMinsEl.textContent = state.customMins;
+});
+document.getElementById('btn-plus').addEventListener('click', () => {
+  state.customMins++;
+  customMinsEl.textContent = state.customMins;
+});
+document.getElementById('btn-custom-start').addEventListener('click', () => {
+  const label = document.getElementById('custom-label').value || '集中タイム';
+  startTimer('✦ ' + label, state.customMins);
+});
+
+
+// ── Splash ────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  const splash = document.getElementById('splash');
+  setTimeout(() => {
+    splash.classList.add('hide');
+    setTimeout(() => splash.remove(), 700);
+  }, 1600);
+});
+
+// ── Initial render ────────────────────────────────────────────
+updateHeader();
+renderHome();
+</script>
+</body>
+</html>
