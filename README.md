@@ -1,7 +1,6 @@
 # 🌸 My Routine — CRYSTAL BLOOM
 
-JILL STUART 2024 spring "Crystal Bloom Sakura Bouquet" インスパイアの  
-**ADHDの女の子のための実行機能サポートアプリ**です。
+**カワイイが好きな女の子のための実行機能サポートアプリ**
 
 ---
 
@@ -61,7 +60,7 @@ https://<あなたのユーザー名>.github.io/<リポジトリ名>/
 
 ## 🎨 デザイン
 
-- カラー：JILL STUART 2024 spring "Crystal Bloom Sakura Bouquet" よりサンプリング
+- カラー：やさしいブルベピンク調
 - 桜ピンク `#EDACC8` × ラベンダー `#B07AAE` × クリスタルシルバー `#C0BAD0`
 - フォント：Noto Sans JP
 - 外部ライブラリ不使用（Google Fonts のみ）
