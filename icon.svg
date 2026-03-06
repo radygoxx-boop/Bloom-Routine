@@ -1,0 +1,128 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="bgGrad" cx="50%" cy="45%" r="55%">
+      <stop offset="0%" stop-color="#FFF0F8"/>
+      <stop offset="100%" stop-color="#F2C4E0"/>
+    </radialGradient>
+    <radialGradient id="petalGrad1" cx="50%" cy="30%" r="60%">
+      <stop offset="0%" stop-color="#FFE8F4"/>
+      <stop offset="100%" stop-color="#F4A7CC"/>
+    </radialGradient>
+    <radialGradient id="petalGrad2" cx="50%" cy="30%" r="60%">
+      <stop offset="0%" stop-color="#FFF0F9"/>
+      <stop offset="100%" stop-color="#E882BB"/>
+    </radialGradient>
+    <radialGradient id="centerGrad" cx="40%" cy="35%" r="55%">
+      <stop offset="0%" stop-color="#FFF5C0"/>
+      <stop offset="100%" stop-color="#F5C842"/>
+    </radialGradient>
+    <radialGradient id="ribbonGrad" cx="50%" cy="30%" r="60%">
+      <stop offset="0%" stop-color="#F9D0EA"/>
+      <stop offset="100%" stop-color="#E06AB0"/>
+    </radialGradient>
+    <filter id="soft" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="2.5" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="4" result="glow"/>
+      <feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background rounded square -->
+  <rect width="512" height="512" rx="110" ry="110" fill="url(#bgGrad)"/>
+
+  <!-- Subtle background petals (decorative, faint) -->
+  <circle cx="80" cy="90" r="38" fill="#F9C8E4" opacity="0.25"/>
+  <circle cx="440" cy="80" r="30" fill="#F9C8E4" opacity="0.18"/>
+  <circle cx="460" cy="430" r="42" fill="#F4A7CC" opacity="0.15"/>
+  <circle cx="60" cy="440" r="35" fill="#F9C8E4" opacity="0.2"/>
+
+  <!-- Main flower — outer petals (5 petals) -->
+  <g transform="translate(256,230)" filter="url(#soft)">
+    <!-- Petal 1 top -->
+    <ellipse cx="0" cy="-88" rx="34" ry="54" fill="url(#petalGrad1)" opacity="0.95"/>
+    <!-- Petal 2 top-right -->
+    <ellipse cx="0" cy="-88" rx="34" ry="54" fill="url(#petalGrad2)" opacity="0.9" transform="rotate(72)"/>
+    <!-- Petal 3 right -->
+    <ellipse cx="0" cy="-88" rx="34" ry="54" fill="url(#petalGrad1)" opacity="0.9" transform="rotate(144)"/>
+    <!-- Petal 4 left -->
+    <ellipse cx="0" cy="-88" rx="34" ry="54" fill="url(#petalGrad2)" opacity="0.9" transform="rotate(216)"/>
+    <!-- Petal 5 top-left -->
+    <ellipse cx="0" cy="-88" rx="34" ry="54" fill="url(#petalGrad1)" opacity="0.9" transform="rotate(288)"/>
+  </g>
+
+  <!-- Inner petals (smaller, lighter) -->
+  <g transform="translate(256,230)">
+    <ellipse cx="0" cy="-58" rx="20" ry="36" fill="#FFF0F8" opacity="0.7" transform="rotate(36)"/>
+    <ellipse cx="0" cy="-58" rx="20" ry="36" fill="#FFF0F8" opacity="0.7" transform="rotate(108)"/>
+    <ellipse cx="0" cy="-58" rx="20" ry="36" fill="#FFF0F8" opacity="0.7" transform="rotate(180)"/>
+    <ellipse cx="0" cy="-58" rx="20" ry="36" fill="#FFF0F8" opacity="0.7" transform="rotate(252)"/>
+    <ellipse cx="0" cy="-58" rx="20" ry="36" fill="#FFF0F8" opacity="0.7" transform="rotate(324)"/>
+  </g>
+
+  <!-- Flower center -->
+  <circle cx="256" cy="230" r="40" fill="url(#centerGrad)" filter="url(#soft)"/>
+  <circle cx="256" cy="230" r="28" fill="#FFF8D0" opacity="0.9"/>
+  <circle cx="248" cy="222" r="8" fill="#F5C842" opacity="0.6"/>
+
+  <!-- Sparkle dots around center -->
+  <circle cx="256" cy="186" r="4" fill="#FFEEDD" opacity="0.9"/>
+  <circle cx="296" cy="206" r="3" fill="#FFD6EE" opacity="0.85"/>
+  <circle cx="290" cy="262" r="3.5" fill="#FFEEDD" opacity="0.85"/>
+  <circle cx="222" cy="266" r="3" fill="#FFD6EE" opacity="0.8"/>
+  <circle cx="216" cy="206" r="3.5" fill="#FFEEDD" opacity="0.85"/>
+
+  <!-- Ribbon bow at bottom -->
+  <g transform="translate(256, 348)" filter="url(#soft)">
+    <!-- Left loop -->
+    <path d="M0,0 C-28,-30 -72,-28 -68,-8 C-64,12 -24,16 0,0Z" fill="url(#ribbonGrad)" opacity="0.95"/>
+    <!-- Right loop -->
+    <path d="M0,0 C28,-30 72,-28 68,-8 C64,12 24,16 0,0Z" fill="url(#ribbonGrad)" opacity="0.95"/>
+    <!-- Left tail -->
+    <path d="M0,0 C-16,14 -30,40 -22,52 C-14,60 -4,42 0,0Z" fill="#E06AB0" opacity="0.85"/>
+    <!-- Right tail -->
+    <path d="M0,0 C16,14 30,40 22,52 C14,60 4,42 0,0Z" fill="#E06AB0" opacity="0.85"/>
+    <!-- Center knot -->
+    <ellipse cx="0" cy="0" rx="14" ry="12" fill="#F4B8D8"/>
+    <ellipse cx="0" cy="0" rx="8" ry="7" fill="#FFDDF0"/>
+  </g>
+
+  <!-- Small floating flowers -->
+  <g transform="translate(104,155) scale(0.45)">
+    <ellipse cx="0" cy="-46" rx="18" ry="28" fill="#F4A7CC" opacity="0.7"/>
+    <ellipse cx="0" cy="-46" rx="18" ry="28" fill="#F4A7CC" opacity="0.65" transform="rotate(90)"/>
+    <ellipse cx="0" cy="-46" rx="18" ry="28" fill="#F9C8E4" opacity="0.65" transform="rotate(180)"/>
+    <ellipse cx="0" cy="-46" rx="18" ry="28" fill="#F9C8E4" opacity="0.65" transform="rotate(270)"/>
+    <circle cx="0" cy="0" r="18" fill="#FFF5C0" opacity="0.9"/>
+  </g>
+
+  <g transform="translate(410,165) scale(0.38)">
+    <ellipse cx="0" cy="-46" rx="18" ry="28" fill="#F9C8E4" opacity="0.7"/>
+    <ellipse cx="0" cy="-46" rx="18" ry="28" fill="#E882BB" opacity="0.6" transform="rotate(72)"/>
+    <ellipse cx="0" cy="-46" rx="18" ry="28" fill="#F4A7CC" opacity="0.65" transform="rotate(144)"/>
+    <ellipse cx="0" cy="-46" rx="18" ry="28" fill="#F9C8E4" opacity="0.65" transform="rotate(216)"/>
+    <ellipse cx="0" cy="-46" rx="18" ry="28" fill="#F4A7CC" opacity="0.65" transform="rotate(288)"/>
+    <circle cx="0" cy="0" r="16" fill="#FFF5C0" opacity="0.9"/>
+  </g>
+
+  <!-- Tiny sparkle stars -->
+  <g fill="#F4A7CC" opacity="0.7">
+    <polygon points="136,300 139,310 150,310 141,316 144,327 136,321 128,327 131,316 122,310 133,310" transform="scale(0.6) translate(90,200)"/>
+  </g>
+  <g fill="#E882BB" opacity="0.6">
+    <polygon points="136,300 139,310 150,310 141,316 144,327 136,321 128,327 131,316 122,310 133,310" transform="scale(0.45) translate(740,140)"/>
+  </g>
+
+  <!-- Glitter dots scattered -->
+  <circle cx="150" cy="340" r="3.5" fill="#F9C8E4" opacity="0.6"/>
+  <circle cx="370" cy="130" r="2.5" fill="#E882BB" opacity="0.55"/>
+  <circle cx="130" cy="200" r="2" fill="#FFF0F8" opacity="0.8"/>
+  <circle cx="390" cy="360" r="3" fill="#F4A7CC" opacity="0.5"/>
+  <circle cx="320" cy="420" r="2.5" fill="#F9C8E4" opacity="0.55"/>
+  <circle cx="190" cy="420" r="2" fill="#E882BB" opacity="0.5"/>
+
+  <!-- Bottom text -->
+  <text x="256" y="468" text-anchor="middle" font-family="Georgia, serif" font-size="38" font-weight="bold" fill="#C45A96" opacity="0.85" letter-spacing="2">bloom</text>
+</svg>
