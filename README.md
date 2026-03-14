@@ -33,20 +33,6 @@ bloom-routine/
     └── icon-16.png     # ファビコン（小）
 ```
 
-## 🛠 ローカルで動かす
-
-```bash
-# Python 3
-python3 -m http.server 8000
-
-# Node.js
-npx serve .
-```
-
-ブラウザで `http://localhost:8000` を開く。
-
-> **Note:** Service Workerはローカルサーバー環境(`localhost`)でのみ正常に動作します。`file://`プロトコルでは動作しません。
-
 ## 📱 PWAインストール方法
 
 ### iPhone / iPad (Safari)
